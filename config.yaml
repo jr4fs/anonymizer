@@ -63,6 +63,14 @@ rules:
   - type: id_alnum
     min_len: 6
     placeholder: CASEID
+    exclude_terms:
+      - covid
+      - covid19
+      - covid-19
+      - covid19.
+      - covid-19.
+      - covid19,
+      - covid-19,
 
   # Structured names (full parity with your build_row_name_patterns)
   - type: structured_names

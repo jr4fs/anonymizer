@@ -290,20 +290,45 @@ class InitialsRule(BaseRule):
 class IDAlnumRule(BaseRule):
     """
     Redact mixed alphanumeric IDs like D9C8DB1BC.
+
     config:
       type: id_alnum
       min_len: 6
-      placeholder: ID
+      placeholder: CASEID
+      exclude_terms: ["covid", "covid19", "covid-19", "covid19.", "covid-19."]  # optional
     """
     def __init__(self, cfg, opts, res):
         super().__init__(cfg, opts, res)
         self.min_len = cfg.get("min_len", 6)
-        self.placeholder = cfg.get("placeholder", "ID")
-        self.rx = re.compile(rf"\b(?=[A-Za-z0-9]*[A-Za-z])(?=[A-Za-z0-9]*\d)[A-Za-z0-9]{{{self.min_len},}}\b")
+        self.placeholder = cfg.get("placeholder", "CASEID")
+
+        # terms we should *not* redact even if they look like IDs
+        # we'll compare lowercase, and we'll strip punctuation like trailing "." or "," when checking
+        self.excludes = set(t.lower() for t in cfg.get("exclude_terms", []))
+
+        # regex that matches any alphanumeric run containing at least one digit AND one letter,
+        # length >= min_len
+        self.rx = re.compile(
+            rf"\b(?=[A-Za-z0-9]*[A-Za-z])(?=[A-Za-z0-9]*\d)[A-Za-z0-9]{{{self.min_len},}}\b"
+        )
 
     def apply(self, text: str) -> str:
-        if not text: return text
-        return self.rx.sub(wrap(self.placeholder, self.opts.get("placeholder_brackets", True)), text)
+        if not text:
+            return text
+
+        def _sub(m):
+            token = m.group(0)
+            # normalize token for comparison (lowercase, remove trailing punctuation like . , ; :)
+            norm = re.sub(r"[^\w-]+$", "", token).lower()
+
+            # if the normalized token matches one of the excluded terms, skip redaction
+            if norm in self.excludes:
+                return token
+
+            # otherwise redact
+            return wrap(self.placeholder, self.opts.get("placeholder_brackets", True))
+
+        return self.rx.sub(_sub, text)
 
 
 # ---------- PronounRule ----------
