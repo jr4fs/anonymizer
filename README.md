@@ -5,6 +5,11 @@ Presidio uses spaCy locally
 
 ---
 
+## Clone repo
+```bash
+git clone https://github.com/jr4fs/anonymizer.git
+```
+
 ## ⚙️ 1. Create and Activate the Conda Environment
 
 ```bash
@@ -16,5 +21,9 @@ conda activate casenote-anon
 
 # Download the spaCy language model required by Presidio
 python -m spacy download en_core_web_lg
+```
 
+## 2. Run the script
+```bash
 python anonymize.py --config config.yaml
+```
