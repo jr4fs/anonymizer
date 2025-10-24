@@ -401,6 +401,8 @@ class PresidioFilteredRule(BaseRule):
             span = text[r.start:r.end]
             low = span.strip().lower()
             # Skip generic time words inside DATE/DATE_TIME
+            if "caseid" in low or "[caseid]" in low:
+                continue
             if r.entity_type in {"DATE","DATE_TIME"} and any(w in low.split() for w in self.date_exempt):
                 continue
             # Skip words we never want as entities

@@ -62,7 +62,7 @@ rules:
   # Mixed alphanumeric IDs like D9C8DB1BC
   - type: id_alnum
     min_len: 6
-    placeholder: ID
+    placeholder: CASEID
 
   # Structured names (full parity with your build_row_name_patterns)
   - type: structured_names
@@ -82,7 +82,7 @@ rules:
     keep: ["YP","HCM","DOP","ADOP","DIM","LDIA","SBC","HWM","CSW","HCM/CSW","TCM","SHM","SHCO","SHC","TEM","TEC","EECM","MSWI","ED","ICCM","HWCM","COVID","COVID-19","COVID19","BBQ"]
     person: ["AS","K", "Seerat", "Jesenya"]
     org: ["HACLA","MFP","SUOS"]   # confirm SUOS; add/remove MV/HFSP/FSP as needed
-    never: ["a","an","at","as","side","down"]
+    never: ["a","an","at","side","down"] #as
     special_map: {"DPSS": "AGENCY"}
 
 
@@ -116,7 +116,7 @@ rules:
       "morningtime", "eveningtime", "lunchtime", "dinnertime", "bedtime",
       "today’s", "tomorrow’s", "yesterday’s", "this week"
     ]
-    skip_words: ["at","as","side", "an", "weeks", "angeles"]
+    skip_words: ["at","side", "an", "weeks", "angeles", "YP"]
     placeholder_map:
       PERSON: PERSON
       LOCATION: LOCATION
