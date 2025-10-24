@@ -157,6 +157,10 @@ class StructuredNamesRule(BaseRule):
         self.placeholder = cfg.get("placeholder","PERSON")
         self.skip = set([s.lower() for s in cfg.get("skip_tokens", ["at","as","side"])])
         self.fm_only = bool(cfg.get("catch_first_middle_initial_no_last", True))
+        # self.any_mid_initial = bool(cfg.get("first_any_middle_initial_no_last", False))
+        self.any_mid_initial = bool(cfg.get("first_any_middle_initial_no_last", False))
+        self.redact_mid_initial_alone = bool(cfg.get("redact_standalone_middle_initial", False))
+
         path = cfg.get("csv_path") or res.get("names_structured_path")
         self.patterns: List[re.Pattern] = []
         if path:
@@ -222,6 +226,18 @@ class StructuredNamesRule(BaseRule):
         if self.fm_only and first and middle and len(middle) == 1:
             pats.append(re.compile(rf"(?i)\b{re.escape(first)}\s+{re.escape(middle)}\.?(?=\b|[^A-Za-z])"))
             pats.append(re.compile(rf"(?i)\b{re.escape(first[0])}\.?\s*{re.escape(middle)}\.?(?=\b|[^A-Za-z])"))
+        # if self.any_mid_initial and first and not middle:
+        #     # e.g., "Jay S." or "Jay S"
+        #     pats.append(re.compile(rf"(?i)\b{re.escape(first)}\s+[A-Za-z]\.?(?=\b|[^A-Za-z])"))
+        # 1) Catch "First X." even when middle isn't in CSV (broader, optional)
+        if self.any_mid_initial and first and not middle:
+            pats.append(re.compile(rf"(?i)\b{re.escape(first)}\s+[A-Za-z]\.?(?=\b|[^A-Za-z])"))
+
+        # 2) Redact a standalone middle initial token (only if this CSV row sets it)
+        if self.redact_mid_initial_alone and middle and len(middle) == 1:
+            # Match 'S' or 'S.' as a standalone word (avoids hitting random letters inside words)
+            pats.append(re.compile(rf"(?i)\b{re.escape(middle)}\.?\b"))
+
         return pats
 
     def apply(self, text: str) -> str:

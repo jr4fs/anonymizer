@@ -19,8 +19,8 @@ options:
   placeholder_brackets: true
 
 resources:
-  names_list_path: data/names.csv           # simple list: one column "name"
-  names_structured_path: data/provided_names.csv  # First/Middle/Last/Other Name i
+  # names_list_path: data/names.csv           # simple list: one column "name"
+  names_structured_path: data/names.csv  # First/Middle/Last/Other Name i
 
 rules:
   # Keep literal common words & time terms (prevents false positives)
@@ -50,7 +50,7 @@ rules:
         replacement: "PERSON"
       - text: "Kendell Lorez"
         replacement: "PERSON"
-        
+
   # Emails, phones, etc.
   - type: regex
     patterns:
@@ -64,13 +64,9 @@ rules:
     min_len: 6
     placeholder: ID
 
-  # Names from a simple list (optional but handy)
-  - type: name_list
-    placeholder: PERSON
-
   # Structured names (full parity with your build_row_name_patterns)
   - type: structured_names
-    csv_path: data/provided_names.csv
+    csv_path: data/names.csv
     first_col: "First Name"
     middle_col: "Middle Name"
     last_col: "Last Name"
@@ -78,7 +74,9 @@ rules:
     skip_tokens: ["at","as","side"]
     placeholder: PERSON
     catch_first_middle_initial_no_last: true
-
+    first_any_middle_initial_no_last: false         # set true only if you lack the middle in CSV and still want "First X." caught
+    redact_standalone_middle_initial: true          # NEW: catches standalone "S" / "S."
+  
   # Initials & acronyms policy (+ DPSS -> AGENCY mapping)
   - type: initials
     keep: ["YP","HCM","DOP","ADOP","DIM","LDIA","SBC","HWM","CSW","HCM/CSW","TCM","SHM","SHCO","SHC","TEM","TEC","EECM","MSWI","ED","ICCM","HWCM","COVID","COVID-19","COVID19","BBQ"]
@@ -86,6 +84,11 @@ rules:
     org: ["HACLA","MFP","SUOS"]   # confirm SUOS; add/remove MV/HFSP/FSP as needed
     never: ["a","an","at","as","side","down"]
     special_map: {"DPSS": "AGENCY"}
+
+
+  # Names from a simple list (optional but handy)
+  - type: name_list
+    placeholder: PERSON
 
   # Optional pronoun redaction toggle
   - type: pronoun
@@ -113,7 +116,7 @@ rules:
       "morningtime", "eveningtime", "lunchtime", "dinnertime", "bedtime",
       "today’s", "tomorrow’s", "yesterday’s", "this week"
     ]
-    skip_words: ["at","as","side", "an", "weeks"]
+    skip_words: ["at","as","side", "an", "weeks", "angeles"]
     placeholder_map:
       PERSON: PERSON
       LOCATION: LOCATION

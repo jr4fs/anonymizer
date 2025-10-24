@@ -1,0 +1,14 @@
+ID,Notes
+1,The [ORG] met with [PERSON] in [LOCATION]. Case ID [ID] was referenced; email [EMAIL] or call [PHONE].
+2,[PERSON] spoke with [AGENCY] and [ORG] about housing at [ORG]. Appointment set for Friday afternoon; not a strict DATE.
+3,[ORG] referred [ORG] for services. [ORG] paperwork done. [ORG] after.
+4,AS accompanied the young person ([ORG]). [PERSON] will follow up in 2+ months; this week is busy but 'weekend' is open.
+5,[PERSON]—also written as [PERSON] [PERSON]—said 'Don’t worry'. We avoid matching '[PERSON]' inside 'Don’t'.
+6,[PERSON] [PERSON]. met with [PERSON] later (pattern: First M.). [PERSON] will review; 'Will' the verb should not be a PERSON.
+7,[ORG] and HWCM (not [ORG]) are internal [LOCATION]. [ID] precautions still in effect yesterday and today.
+8,Side and down should never be persons. Angeles alone [PERSON] [PERSON] be a person; '[LOCATION]' becomes [LOCATION].
+9,"Time words: morning, evening, tonight, year, years, hour, hours, minute, minutes; month([PERSON]) not redacted. March, October, Christmas remain visible by policy."
+10,[PERSON] checked in at [ORG]. Phone [PHONE]. 'Day' here is a common word; not a person.
+11,Email: name.[PERSON]+[EMAIL]; Phone: +[PHONE]. Mixed alnum ID [ID] should be redacted.
+12,[PERSON] met with [ORG] and [ORG]; these acronyms are kept. [ORG] is not an org; [ORG] may be an org (pending decision).
+CSV,[PERSON]
