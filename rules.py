@@ -378,7 +378,13 @@ class PresidioFilteredRule(BaseRule):
         self.date_exempt = set([w.lower() for w in cfg.get("date_exempt_terms", [])])
         self.skip_words = set([w.lower() for w in cfg.get("skip_words", [])])
         self.special_map = {k.lower(): v for k,v in (cfg.get("special_map") or {}).items()}
-
+        self.allow_terms = set([
+            "yp","hcm","dop","adop","dim","ldia","sbc","hwm","csw","hcm/csw","tcm",
+            "shm","shco","shc","tem","tec","eecm","mswi","ed",
+            "iccm","hwcm",
+            "covid","covid19","covid-19",
+            "bbq"
+        ])
         # NLP engine
         provider = NlpEngineProvider(nlp_configuration={
             "nlp_engine_name": "spacy",
@@ -401,10 +407,26 @@ class PresidioFilteredRule(BaseRule):
             span = text[r.start:r.end]
             low = span.strip().lower()
             # Skip generic time words inside DATE/DATE_TIME
+            # if "caseid" in low or "[caseid]" in low:
+            #     continue
+            # if r.entity_type in {"DATE","DATE_TIME"} and any(w in low.split() for w in self.date_exempt):
+            #     continue
+            # 0) Never redact allowlisted acronyms/markers like YP, COVID19, BBQ
+            if low in self.allow_terms:
+                continue
+
+            # 1) If we've already replaced this with a custom placeholder like [CASEID],
+            #    do not let Presidio touch it again.
             if "caseid" in low or "[caseid]" in low:
                 continue
-            if r.entity_type in {"DATE","DATE_TIME"} and any(w in low.split() for w in self.date_exempt):
-                continue
+
+            # 2) Skip DATE/DATE_TIME if it contains exempt terms
+            if r.entity_type in {"DATE","DATE_TIME"}:
+                # we treat it as exempt if ANY of the tokens in the span are in date_exempt_terms
+                span_tokens = re.findall(r"[A-Za-z']+", low)
+                if any(tok in self.date_exempt for tok in span_tokens):
+                    continue
+
             # Skip words we never want as entities
             if low in self.skip_words:
                 continue

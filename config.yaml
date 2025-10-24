@@ -116,7 +116,7 @@ rules:
       "morningtime", "eveningtime", "lunchtime", "dinnertime", "bedtime",
       "today’s", "tomorrow’s", "yesterday’s", "this week"
     ]
-    skip_words: ["at","side", "an", "weeks", "angeles", "YP"]
+    skip_words: ["at","side", "an", "weeks", "angeles", "YP", "BBQ"]
     placeholder_map:
       PERSON: PERSON
       LOCATION: LOCATION
