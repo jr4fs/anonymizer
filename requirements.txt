@@ -1,0 +1,7 @@
+presidio-analyzer
+presidio-anonymizer
+spacy
+pandas
+tqdm
+pyyaml>=6.0
+openpyxl>=3.1
