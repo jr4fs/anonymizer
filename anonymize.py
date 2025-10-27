@@ -70,12 +70,53 @@ except Exception:
         def write(msg): print(msg)
 
 
+# def apply_pipeline(df: pd.DataFrame, text_columns: List[str], rules) -> pd.DataFrame:
+#     """
+#     For each text column:
+#       - cast to str
+#       - apply each rule in order
+#     Shows a tqdm progress bar per column if tqdm is available.
+#     """
+#     out = df.copy()
+
+#     for col in text_columns:
+#         if col not in out.columns:
+#             tqdm.write(f"[WARN] Column '{col}' not found in dataframe, skipping.")
+#             continue
+
+#         tqdm.write(f"[INFO] Anonymizing column '{col}' ...")
+
+#         # ensure string dtype
+#         out[col] = out[col].astype(str)
+
+#         # We'll build the full transform row-by-row so we can show a row progress bar.
+#         # For large frames this is slower than vectorized .apply(rule.apply) per rule,
+#         # but it's transparent and easier to debug. If performance becomes a problem,
+#         # we can flip back to the vectorized approach.
+#         series = out[col]
+
+#         # row-level loop with progress bar
+#         it = series.items()
+#         if TQDM_AVAILABLE:
+#             it = tqdm(it, total=len(series), desc=f"  {col}", unit="row")
+
+#         new_values = []
+#         for idx, cell in it:
+#             text_val = cell
+#             for rule in rules:
+#                 text_val = rule.apply(text_val)
+#             new_values.append(text_val)
+
+#         out[col] = new_values
+
+#     return out
+
 def apply_pipeline(df: pd.DataFrame, text_columns: List[str], rules) -> pd.DataFrame:
     """
     For each text column:
-      - cast to str
-      - apply each rule in order
-    Shows a tqdm progress bar per column if tqdm is available.
+      - create a new column <col>_anonymized
+      - leave the original column untouched
+    Shows tqdm progress per column.
     """
     out = df.copy()
 
@@ -87,18 +128,12 @@ def apply_pipeline(df: pd.DataFrame, text_columns: List[str], rules) -> pd.DataF
         tqdm.write(f"[INFO] Anonymizing column '{col}' ...")
 
         # ensure string dtype
-        out[col] = out[col].astype(str)
+        source_series = out[col].astype(str)
 
-        # We'll build the full transform row-by-row so we can show a row progress bar.
-        # For large frames this is slower than vectorized .apply(rule.apply) per rule,
-        # but it's transparent and easier to debug. If performance becomes a problem,
-        # we can flip back to the vectorized approach.
-        series = out[col]
-
-        # row-level loop with progress bar
-        it = series.items()
+        # row-level loop w/ tqdm
+        it = source_series.items()
         if TQDM_AVAILABLE:
-            it = tqdm(it, total=len(series), desc=f"  {col}", unit="row")
+            it = tqdm(it, total=len(source_series), desc=f"  {col}", unit="row")
 
         new_values = []
         for idx, cell in it:
@@ -107,10 +142,10 @@ def apply_pipeline(df: pd.DataFrame, text_columns: List[str], rules) -> pd.DataF
                 text_val = rule.apply(text_val)
             new_values.append(text_val)
 
-        out[col] = new_values
+        # write anonymized text to a *new* column
+        out[f"{col}_anonymized"] = new_values
 
     return out
-
 
 def main():
     ap = argparse.ArgumentParser(description="Config-driven casenote anonymizer (no-LM).")

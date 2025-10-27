@@ -270,20 +270,55 @@ class InitialsRule(BaseRule):
         self.token = re.compile(r"\b[A-Za-z]{1,6}(?:/[A-Za-z]{1,6})?\b")
 
     def apply(self, text: str) -> str:
-        if not text: return text
-        def repl(m):
-            tok = m.group(0)
-            low = tok.lower()
-            if low in self.never: return tok
-            if low in self.keep: return tok
+        if not text:
+            return text
+
+        # We'll handle possessives too, e.g. MFP's or MFP’s
+        # Strategy:
+        #   1. First pass: replace possessive forms explicitly
+        #   2. Second pass: replace bare forms
+
+        def classify_token(raw_tok: str) -> Optional[str]:
+            low = raw_tok.lower()
+            if low in self.never:
+                return None
+            if low in self.keep:
+                return None
             if low in self.special_map:
                 return wrap(self.special_map[low], self.opts.get("placeholder_brackets", True))
             if low in self.person:
                 return wrap("PERSON", self.opts.get("placeholder_brackets", True))
             if low in self.org:
                 return wrap("ORG", self.opts.get("placeholder_brackets", True))
-            return tok
-        return self.token.sub(repl, text)
+            return None
+
+        # 1. Handle possessive forms like MFP's / MFP’s
+        #    We'll search for (\bTOKEN)(['’]s)
+        poss_rx = re.compile(r"\b([A-Za-z]{1,6}(?:/[A-Za-z]{1,6})?)([’']s)\b")
+        def poss_sub(m):
+            core = m.group(1)
+            postfix = m.group(2)  # 's or ’s
+            rep = classify_token(core)
+            if rep is None:
+                # not a known special token -> leave as-is
+                return m.group(0)
+            else:
+                # We want the whole thing (including 's) to map to that replacement, NOT “[ORG]’s”
+                # per your requirement, "MFP's" should just become [ORG]
+                return rep
+
+        out = poss_rx.sub(poss_sub, text)
+
+        # 2. Handle bare forms, e.g. "MFP", "HACLA"
+        def bare_sub(m):
+            core = m.group(0)
+            rep = classify_token(core)
+            return rep if rep is not None else core
+
+        out = self.token.sub(bare_sub, out)
+
+        return out
+
 
 
 # ---------- IDAlnumRule ----------
@@ -397,7 +432,22 @@ class PresidioFilteredRule(BaseRule):
         except Exception:
             self.available = False
             return
-
+        self.time_rx = re.compile(
+            r"""(?ix)
+            ^                    # start of the span
+            (?:
+                (?:[01]?\d|2[0-3])        # hour 0-23 or 1-12 etc.
+                (?:
+                    :[0-5]\d              # optional :mm
+                )?
+                \s*
+                (?:a\.?m\.?|p\.?m\.?)?    # optional am/pm variants
+            |
+                (?:[01]?\d|2[0-3])\s*(?:a\.?m\.?|p\.?m\.?)  # like '3pm', '11 am'
+            )
+            $                    # end of the span
+            """
+        )
         self.available = True
         self.placeholder_map = cfg.get("placeholder_map", {})
         self.date_exempt = set([w.lower() for w in cfg.get("date_exempt_terms", [])])
@@ -408,7 +458,7 @@ class PresidioFilteredRule(BaseRule):
             "shm","shco","shc","tem","tec","eecm","mswi","ed",
             "iccm","hwcm",
             "covid","covid19","covid-19",
-            "bbq"
+            "bbq", "DOD", "LSHC", "MFP", "YP","HCM","DOP","ADOP", "ADOP EK", "DIM","LDIA","SBC","HWM","CSW","HCM/CSW","TCM","SHM","SHCO","SHC","TEM","TEC","EECM","MSWI","ED","ICCM","HWCM","COVID","COVID-19","COVID19","BBQ"
         ])
         # NLP engine
         provider = NlpEngineProvider(nlp_configuration={
@@ -445,9 +495,13 @@ class PresidioFilteredRule(BaseRule):
             if "caseid" in low or "[caseid]" in low:
                 continue
 
-            # 2) Skip DATE/DATE_TIME if it contains exempt terms
+            # (C) Skip DATE/DATE_TIME for natural time expressions we don't want redacted
             if r.entity_type in {"DATE","DATE_TIME"}:
-                # we treat it as exempt if ANY of the tokens in the span are in date_exempt_terms
+                # 1. If this span looks like a clock time (3pm, 10:45 a.m.), skip it
+                if self.time_rx.search(span.strip()):
+                    continue
+
+                # 2. If this span includes any words from the exempt list (today, afternoon, weekend...), skip it
                 span_tokens = re.findall(r"[A-Za-z']+", low)
                 if any(tok in self.date_exempt for tok in span_tokens):
                     continue
@@ -473,12 +527,45 @@ class PresidioFilteredRule(BaseRule):
             out = re.sub(rf"(?i)\b{re.escape(tok)}\b", wrap(tag, self.opts.get("placeholder_brackets", True)), out)
         return out
 
+class AgeRule(BaseRule):
+    """
+    Redact ages like 'age 61' -> 'age[AGE]'.
+    We only touch numbers that directly follow the word 'age' (case-insensitive),
+    optionally with punctuation or colon.
+
+    config:
+      type: age
+      placeholder: AGE
+    """
+
+    def __init__(self, cfg, opts, res):
+        super().__init__(cfg, opts, res)
+        self.placeholder = cfg.get("placeholder", "AGE")
+        # matches: age 61 / Age: 14 / AGE- 2
+        # group 1 = "age" (keep), group 2 = the number
+        self.rx = re.compile(
+            r"(?i)\b(age)\s*[:\-]?\s*(\d{1,3})\b"
+        )
+
+    def apply(self, text: str) -> str:
+        if not text:
+            return text
+
+        def _sub(m):
+            age_word = m.group(1)        # "age" with original case
+            num = m.group(2)             # "61"
+            # build replacement: keep "age", redact just number
+            repl_num = wrap("AGE", self.opts.get("placeholder_brackets", True))
+            return f"{age_word}{repl_num}"
+
+        return self.rx.sub(_sub, text)
 
 # ---------- Factory ----------
 RULE_TYPES = {
     "word_guard": WordGuardRule,
     "phrase_protect": PhraseProtectRule,
     "regex": RegexRule,
+    "age": AgeRule,
     "name_list": NameListRule,
     "structured_names": StructuredNamesRule,
     "initials": InitialsRule,

@@ -1,14 +1,14 @@
 ID,Notes
-1,"The YP met with Seerat in Los Angeles. Case ID D9C8DB1BC was referenced; email seerat@example.com or call (213) 555-1212."
-2,"Talvin spoke with DPSS and MFP about housing at Mercy Medical. Appointment set for Friday afternoon; not a strict DATE."
-3,"Michaels Village referred The Center for services. HACLA paperwork done. BBQ after."
-4,"AS accompanied the young person (YP). K will follow up in 2+ months; this week is busy but 'weekend' is open."
-5,"Kendell Lorez—also written as Ken Lorez—said 'Don’t worry'. We avoid matching 'Don' inside 'Don’t'."
-6,"Jay S. met with Smith later (pattern: First M.). Francisco will review; 'Will' the verb should not be a PERSON."
-7,"ICCM and HWCM (not HWBM) are internal San Francisco. COVID19 precautions still in effect yesterday and today."
-8,"Side and down should never be persons. Angeles alone Jaspreet Ranjit be a person; 'Los Angeles' becomes [LOCATION]."
+1,MFP’s The YP met with Seerat in Los Angeles. Case ID D9C8DB1BC was referenced; email seerat@example.com or call (213) 555-1212.
+2,Age 61 Talvin spoke with DPSS and MFP about housing at Mercy Medical. Appointment set for Friday afternoon; not a strict DATE.
+3,DOD LSHC 3pm MFP DOD SHC Michaels Village SHC VP referred The Center for services. HACLA paperwork done. BBQ after.
+4,AS accompanied the young person (YP). K will follow up in 2+ months; this week is busy but 'weekend' is open.
+5,Kendell Lorez—also written as Ken Lorez—said 'Don’t worry'. We avoid matching 'Don' inside 'Don’t'.
+6,Jay S. met with Smith later (pattern: First M.). Francisco will review; 'Will' the verb should not be a PERSON.
+7,ICCM and HWCM (not HWBM) are internal San Francisco. COVID19 precautions still in effect yesterday and today.
+8,Side and down should never be persons. Angeles alone Jaspreet Ranjit be a person; 'Los Angeles' becomes [LOCATION].
 9,"Time words: morning, evening, tonight, year, years, hour, hours, minute, minutes; month(s) not redacted. March, October, Christmas remain visible by policy."
-10,"Mosha checked in at The Center. Phone 213.555.0000. 'Day' here is a common word; not a person."
-11,"Email: name.s+tag@domain.co.uk; Phone: +1 310-555-7788. Mixed alnum ID ABC123XYZ should be redacted."
-12,"Jesenya met with HCM/CSW and SHC; these acronyms are kept. SU is not an org; SUOS may be an org (pending decision)."
-CSV
+10,Mosha checked in at The Center. Phone 213.555.0000. 'Day' here is a common word; not a person.
+11,Email: name.s+tag@domain.co.uk; Phone: +1 310-555-7788. Mixed alnum ID ABC123XYZ should be redacted.
+12,Jesenya met with HCM/CSW and SHC; these acronyms are kept. SU is not an org; SUOS may be an org (pending decision).
+CSV,
