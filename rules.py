@@ -296,17 +296,20 @@ class InitialsRule(BaseRule):
         #    We'll search for (\bTOKEN)(['’]s)
         poss_rx = re.compile(r"\b([A-Za-z]{1,6}(?:/[A-Za-z]{1,6})?)([’']s)\b")
         def poss_sub(m):
-            core = m.group(1)
-            postfix = m.group(2)  # 's or ’s
+            core = m.group(1)          # e.g., "MFP"
+            low  = core.lower()
+            # If this is a kept acronym (e.g., mfp, shc, etc.), strip the possessive entirely.
+            # This prevents later rules from treating the "'s" as a standalone initial.
+            if low in self.keep:
+                return core
+
             rep = classify_token(core)
             if rep is None:
-                # not a known special token -> leave as-is
+                # not a known special token -> leave the original possessive untouched
                 return m.group(0)
             else:
-                # We want the whole thing (including 's) to map to that replacement, NOT “[ORG]’s”
-                # per your requirement, "MFP's" should just become [ORG]
+                # map the whole thing ("MFP's") to a single placeholder (e.g., [ORG])
                 return rep
-
         out = poss_rx.sub(poss_sub, text)
 
         # 2. Handle bare forms, e.g. "MFP", "HACLA"
@@ -458,8 +461,15 @@ class PresidioFilteredRule(BaseRule):
             "shm","shco","shc","tem","tec","eecm","mswi","ed",
             "iccm","hwcm",
             "covid","covid19","covid-19",
-            "bbq", "DOD", "LSHC", "MFP", "YP","HCM","DOP","ADOP", "ADOP EK", "DIM","LDIA","SBC","HWM","CSW","HCM/CSW","TCM","SHM","SHCO","SHC","TEM","TEC","EECM","MSWI","ED","ICCM","HWCM","COVID","COVID-19","COVID19","BBQ"
+            "bbq",
+            "mfp","dod","lshc", 
+            # (duplicates in lowercase so we don't miss variants)
+            "hcm/csw",
+            # if you have a composite like "adop ek", include it explicitly:
+            "adop ek"
         ])
+        # self.allow_terms = set([ "yp","hcm","dop","adop","dim","ldia","sbc","hwm","csw","hcm/csw","tcm", "shm","shco","shc","tem","tec","eecm","mswi","ed", "iccm","hwcm", "covid","covid19","covid-19", "bbq", "DOD", "LSHC", "MFP", "YP","HCM","DOP","ADOP", "ADOP EK", "DIM","LDIA","SBC","HWM","CSW","HCM/CSW","TCM","SHM","SHCO","SHC","TEM","TEC","EECM","MSWI","ED","ICCM","HWCM","COVID","COVID-19","COVID19","BBQ" ])
+
         # NLP engine
         provider = NlpEngineProvider(nlp_configuration={
             "nlp_engine_name": "spacy",
@@ -509,6 +519,11 @@ class PresidioFilteredRule(BaseRule):
             # Skip words we never want as entities
             if low in self.skip_words:
                 continue
+            # if the span contains ANY kept token, skip the whole span
+            span_tokens = re.findall(r"[A-Za-z/]+", span.lower())
+            if any(tok in self.allow_terms for tok in span_tokens):
+                continue
+
             filtered.append(r)
 
         # Build operator map
@@ -559,6 +574,31 @@ class AgeRule(BaseRule):
             return f"{age_word}{repl_num}"
 
         return self.rx.sub(_sub, text)
+class KeepPossessiveGuardRule(BaseRule):
+    """
+    Strip possessive 's from keep-words so later name/initial rules can't
+    interpret the trailing 's as a standalone initial.
+    config:
+      type: keep_possessive_guard
+      keep_words: ["MFP","SHC","LSHC","DOD", ...]  # case-insensitive
+    """
+    def __init__(self, cfg, opts, res):
+        super().__init__(cfg, opts, res)
+        keep = [w for w in cfg.get("keep_words", []) if w]
+        # build a case-insensitive alternation; longest first to avoid partials
+        keep = sorted(set(keep), key=len, reverse=True)
+        if keep:
+            alt = "|".join(re.escape(k) for k in keep)
+            # \b(KEEP)(['’]s)\b  -> return just \1 (the keep token), dropping possessive
+            self.rx = re.compile(rf"(?i)\b({alt})([’']s)\b")
+        else:
+            self.rx = None
+
+    def apply(self, text: str) -> str:
+        if not text or not self.rx:
+            return text
+        # preserve original case of the core keep token; drop the possessive entirely
+        return self.rx.sub(lambda m: m.group(1), text)
 
 # ---------- Factory ----------
 RULE_TYPES = {
@@ -572,6 +612,7 @@ RULE_TYPES = {
     "id_alnum": IDAlnumRule,
     "pronoun": PronounRule,
     "presidio_filtered": PresidioFilteredRule,
+    "keep_possessive_guard": KeepPossessiveGuardRule,
 }
 
 def build_rules(cfg_rules: List[Dict[str, Any]], opts: Dict[str, Any], res: Dict[str, Any]):

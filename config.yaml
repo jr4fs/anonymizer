@@ -51,6 +51,10 @@ rules:
       - text: "Kendell Lorez"
         replacement: "PERSON"
 
+  - type: keep_possessive_guard
+    keep_words: ["MFP","SHC","LSHC","DOD","YP","HCM","HCM/CSW","ICCM","HWCM"]
+    # add any other acronyms you never want to be affected when followed by 's
+
   # Emails, phones, etc.
   - type: regex
     patterns:
